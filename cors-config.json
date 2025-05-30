@@ -1,0 +1,12 @@
+[
+    {
+      "origin": [
+        "https://6000-firebase-studio-1748595052338.cluster-ombtxv25tbd6yrjpp3lukp6zhc.cloudworkstations.dev",
+        "https://9000-firebase-studio-1748595052338.cluster-ombtxv25tbd6yrjpp3lukp6zhc.cloudworkstations.dev",
+        "http://192.168.1.51:9002/"
+      ],
+      "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      "responseHeader": ["Content-Type", "Authorization", "Content-Length", "User-Agent", "X-Firebase-Storage-Version", "Access-Control-Allow-Origin"],
+      "maxAgeSeconds": 3600
+    }
+  ]
