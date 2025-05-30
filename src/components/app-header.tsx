@@ -1,10 +1,10 @@
-
 "use client";
 import Link from 'next/link';
 import { Utensils, LogIn, LogOut, UserCircle, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { ThemeToggle } from '@/components/theme-toggle';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,12 +37,15 @@ export default function AppHeader() {
         
         <div className="flex items-center gap-4">
           {canAccessDashboard && (
-            <Button asChild variant="outline" size="sm">
-              <Link href="/dashboard" className="flex items-center gap-1 sm:gap-2">
-                <LayoutDashboard className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="hidden sm:inline">Dashboard</span>
-              </Link>
-            </Button>
+            <>
+              <ThemeToggle />
+              <Button asChild variant="outline" size="sm">
+                <Link href="/dashboard" className="flex items-center gap-1 sm:gap-2">
+                  <LayoutDashboard className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                </Link>
+              </Button>
+            </>
           )}
           {loading ? (
              <div className="flex items-center gap-2">

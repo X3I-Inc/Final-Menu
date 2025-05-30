@@ -35,8 +35,10 @@ export default function MenuDisplay({ restaurant }: MenuDisplayProps) {
   const canEditMenu = user && (userRole === 'owner' || userRole === 'superowner');
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12">
-      <RestaurantProfile restaurant={restaurant} />
+    <div className="container mx-auto px-4 py-8 md:py-12 space-y-8">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+        <RestaurantProfile restaurant={restaurant} />
+      </div>
 
       {canEditMenu && !authLoading && (
         <div className="my-6 flex justify-end">
