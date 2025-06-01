@@ -18,11 +18,12 @@ import AddCategoryForm from '@/components/dashboard/add-category-form';
 import MenuItemsManager from '@/components/dashboard/menu-items-manager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ChefHat, Loader2, ShieldAlert, Building, Layers, Trash2 } from 'lucide-react';
+import { ChefHat, Loader2, ShieldAlert, Building, Layers, Trash2, Pencil } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import EditRestaurantForm from '@/components/dashboard/edit-restaurant-form';
 
 type UserRole = 'owner' | 'superowner';
 
@@ -34,6 +35,7 @@ export default function DashboardPage() {
   const [restaurantsToManage, setRestaurantsToManage] = useState<Restaurant[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isEditingRestaurant, setIsEditingRestaurant] = useState(false);
 
   const loadPageData = useCallback(async (
     authUser: any,
@@ -155,6 +157,21 @@ export default function DashboardPage() {
       setSelectedRestaurant(updatedRestaurant || null);
 
       // If superowner, also update the list of all restaurants as one has changed
+      if (userRole === 'superowner') {
+        const allRestaurants = await getAllRestaurants();
+        setRestaurantsToManage(allRestaurants);
+      }
+      setIsLoadingData(false);
+    }
+  };
+
+  const handleRestaurantUpdated = async () => {
+    setIsEditingRestaurant(false);
+    if (selectedRestaurant) {
+      setIsLoadingData(true);
+      const updatedRestaurant = await getRestaurantById(selectedRestaurant.id);
+      setSelectedRestaurant(updatedRestaurant || null);
+      // If superowner, refresh the list of all restaurants as one of them changed
       if (userRole === 'superowner') {
         const allRestaurants = await getAllRestaurants();
         setRestaurantsToManage(allRestaurants);
@@ -307,110 +324,147 @@ export default function DashboardPage() {
         </Alert>
       )}
 
-      {selectedRestaurant ? (
+      {selectedRestaurant && !isLoadingData && (
         <>
-          <Card className="shadow-lg rounded-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Layers className="h-6 w-6 text-primary" /> Add New Category to: {selectedRestaurant.name}</CardTitle>
-              <CardDescription>Create a new section for your menu (e.g., Appetizers, Main Courses, Desserts).</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AddCategoryForm 
-                restaurantId={selectedRestaurant.id} 
-                onCategoryAdded={handleCategoryAdded}
-              />
-            </CardContent>
-          </Card>
+          {isEditingRestaurant ? (
+            <Card className="shadow-lg rounded-xl">
+              <CardHeader>
+                <CardTitle>Edit Restaurant Information</CardTitle>
+                <CardDescription>Update the restaurant's details.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EditRestaurantForm
+                  restaurant={selectedRestaurant}
+                  onRestaurantUpdated={handleRestaurantUpdated}
+                  onCancel={() => setIsEditingRestaurant(false)}
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <Card className="shadow-lg rounded-xl">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>{selectedRestaurant.name}</CardTitle>
+                    <CardDescription>{selectedRestaurant.description}</CardDescription>
+                  </div>
+                  {userRole === 'superowner' && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditingRestaurant(true)}
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit Restaurant
+                    </Button>
+                  )}
+                </CardHeader>
+              </Card>
 
-          <Card className="shadow-lg rounded-xl">
-            <CardHeader>
-              <CardTitle>Manage Menu Items</CardTitle>
-              <CardDescription>View, edit, and delete menu items for {selectedRestaurant.name}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {selectedRestaurant.menuCategories.map((category) => (
-                  <Card key={category.id} className="shadow-lg rounded-xl">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <CardTitle className="text-xl">{category.name}</CardTitle>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete Category
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Category</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete the "{category.name}" category? This will also delete all menu items in this category. This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={async () => {
-                                const success = await deleteMenuCategory(selectedRestaurant.id, category.id);
-                                if (success) {
-                                  toast({
-                                    title: "Category Deleted",
-                                    description: `${category.name} has been successfully deleted.`,
-                                    className: "bg-green-100 border-green-300 text-green-700 dark:bg-green-900 dark:border-green-700 dark:text-green-200"
-                                  });
-                                  await handleCategoryDeleted();
-                                } else {
-                                  toast({
-                                    variant: "destructive",
-                                    title: "Error Deleting Category",
-                                    description: "Could not delete the category. Please try again.",
-                                  });
-                                }
-                              }}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </CardHeader>
-                    <CardContent>
-                      <MenuItemsManager
-                        restaurant={selectedRestaurant}
-                        onMenuItemDeleted={handleMenuItemAdded}
-                        categoryId={category.id}
-                      />
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+              <Card className="shadow-lg rounded-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Layers className="h-6 w-6 text-primary" /> Add New Category to: {selectedRestaurant.name}</CardTitle>
+                  <CardDescription>Create a new section for your menu (e.g., Appetizers, Main Courses, Desserts).</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AddCategoryForm 
+                    restaurantId={selectedRestaurant.id} 
+                    onCategoryAdded={handleCategoryAdded}
+                  />
+                </CardContent>
+              </Card>
 
-          <Card className="shadow-lg rounded-xl">
-            <CardHeader>
-              <CardTitle>Add New Menu Item to: {selectedRestaurant.name}</CardTitle>
-              <CardDescription>Fill in the details for the new menu item.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MenuItemForm
-                restaurant={selectedRestaurant}
-                onMenuItemAdd={handleMenuItemAdded}
-              />
-            </CardContent>
-          </Card>
+              <Card className="shadow-lg rounded-xl">
+                <CardHeader>
+                  <CardTitle>Manage Menu Items</CardTitle>
+                  <CardDescription>View, edit, and delete menu items for {selectedRestaurant.name}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {selectedRestaurant.menuCategories.map((category) => (
+                      <Card key={category.id} className="shadow-lg rounded-xl">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                          <CardTitle className="text-xl">{category.name}</CardTitle>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Category
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Category</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete the "{category.name}" category? This will also delete all menu items in this category. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={async () => {
+                                    const success = await deleteMenuCategory(selectedRestaurant.id, category.id);
+                                    if (success) {
+                                      toast({
+                                        title: "Category Deleted",
+                                        description: `${category.name} has been successfully deleted.`,
+                                        className: "bg-green-100 border-green-300 text-green-700 dark:bg-green-900 dark:border-green-700 dark:text-green-200"
+                                      });
+                                      await handleCategoryDeleted();
+                                    } else {
+                                      toast({
+                                        variant: "destructive",
+                                        title: "Error Deleting Category",
+                                        description: "Could not delete the category. Please try again.",
+                                      });
+                                    }
+                                  }}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </CardHeader>
+                        <CardContent>
+                          <MenuItemsManager
+                            restaurant={selectedRestaurant}
+                            onMenuItemDeleted={handleMenuItemAdded}
+                            onMenuItemUpdated={handleMenuItemAdded}
+                            categoryId={category.id}
+                          />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-lg rounded-xl">
+                <CardHeader>
+                  <CardTitle>Add New Menu Item to: {selectedRestaurant.name}</CardTitle>
+                  <CardDescription>Fill in the details for the new menu item.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <MenuItemForm
+                    restaurant={selectedRestaurant}
+                    onMenuItemAdd={handleMenuItemAdded}
+                  />
+                </CardContent>
+              </Card>
+            </>
+          )}
         </>
-      ) : (
-        userRole === 'superowner' && restaurantsToManage.length > 0 && !isLoadingData && (
-          <Alert>
-            <ChefHat className="h-4 w-4" />
-            <AlertTitle>Select a Restaurant</AlertTitle>
-            <AlertDescription>
-              Please select a restaurant from the dropdown above to start managing its menu.
-            </AlertDescription>
-          </Alert>
-        )
+      )}
+
+      {!selectedRestaurant && userRole === 'superowner' && restaurantsToManage.length > 0 && !isLoadingData && (
+        <Alert>
+          <ChefHat className="h-4 w-4" />
+          <AlertTitle>Select a Restaurant</AlertTitle>
+          <AlertDescription>
+            Please select a restaurant from the dropdown above to start managing its menu.
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   );

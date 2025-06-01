@@ -14,6 +14,8 @@ import {
   deleteDoc,
   // writeBatch, // Not currently used, but good to have for batch operations
 } from "firebase/firestore";
+import { storage } from './firebase';
+import { ref, deleteObject, listAll } from 'firebase/storage';
 
 export interface MenuItem {
   id: string; 
@@ -358,7 +360,42 @@ export async function deleteRestaurant(restaurantId: string): Promise<boolean> {
   }
 
   try {
+    // First, get the restaurant data to find all image URLs
     const restaurantRef = doc(db, "restaurants", restaurantId);
+    const restaurantSnap = await getDoc(restaurantRef);
+
+    if (!restaurantSnap.exists()) {
+      console.error("Restaurant not found for deletion:", restaurantId);
+      return false;
+    }
+
+    const restaurantData = restaurantSnap.data() as Omit<Restaurant, 'id'>;
+
+    // Delete all menu item images
+    const menuItemsImagesRef = ref(storage, `menu_item_images/${restaurantId}`);
+    try {
+      const menuItemsImagesList = await listAll(menuItemsImagesRef);
+      const deletePromises = menuItemsImagesList.items.map(itemRef => deleteObject(itemRef));
+      await Promise.all(deletePromises);
+      console.log("Deleted all menu item images for restaurant:", restaurantId);
+    } catch (error) {
+      console.error("Error deleting menu item images:", error);
+      // Continue with restaurant deletion even if image deletion fails
+    }
+
+    // Delete restaurant logo if it's not a placeholder
+    if (restaurantData.logoUrl && !restaurantData.logoUrl.includes('placehold.co')) {
+      try {
+        const logoRef = ref(storage, restaurantData.logoUrl);
+        await deleteObject(logoRef);
+        console.log("Deleted restaurant logo:", restaurantData.logoUrl);
+      } catch (error) {
+        console.error("Error deleting restaurant logo:", error);
+        // Continue with restaurant deletion even if logo deletion fails
+      }
+    }
+
+    // Finally, delete the restaurant document
     await deleteDoc(restaurantRef);
     console.log("Restaurant deleted from Firestore:", restaurantId);
     return true;
@@ -400,6 +437,103 @@ export async function deleteMenuCategory(
     return true;
   } catch (error) {
     console.error("Error deleting menu category from Firestore:", error);
+    return false;
+  }
+}
+
+export async function updateMenuItem(
+  restaurantId: string,
+  categoryId: string,
+  itemId: string,
+  updatedItemData: Partial<Omit<MenuItem, 'id'>>
+): Promise<boolean> {
+  if (!restaurantId || !categoryId || !itemId) {
+    console.error("Missing required parameters for updating menu item:", { restaurantId, categoryId, itemId });
+    return false;
+  }
+
+  try {
+    const restaurantRef = doc(db, "restaurants", restaurantId);
+    const restaurantSnap = await getDoc(restaurantRef);
+
+    if (!restaurantSnap.exists()) {
+      console.error("Restaurant not found for updating menu item:", restaurantId);
+      return false;
+    }
+
+    const restaurantData = restaurantSnap.data() as Omit<Restaurant, 'id'>;
+    const currentCategories = restaurantData.menuCategories || [];
+    const categoryIndex = currentCategories.findIndex(c => c.id === categoryId);
+
+    if (categoryIndex === -1) {
+      console.error("Category ID not found in restaurant for updating menu item:", categoryId, restaurantId);
+      return false;
+    }
+
+    // Create a deep copy to safely modify
+    const updatedMenuCategories = JSON.parse(JSON.stringify(currentCategories)) as MenuCategory[];
+    
+    if (!updatedMenuCategories[categoryIndex].items) {
+      console.error("No items array found in category:", categoryId);
+      return false;
+    }
+
+    const itemIndex = updatedMenuCategories[categoryIndex].items.findIndex(item => item.id === itemId);
+    if (itemIndex === -1) {
+      console.error("Item not found in category:", itemId, categoryId);
+      return false;
+    }
+
+    // Update the item with new data
+    updatedMenuCategories[categoryIndex].items[itemIndex] = {
+      ...updatedMenuCategories[categoryIndex].items[itemIndex],
+      ...updatedItemData
+    };
+
+    await updateDoc(restaurantRef, {
+      menuCategories: updatedMenuCategories
+    });
+    
+    console.log("Menu item updated in Firestore for restaurant:", restaurantId, "category:", categoryId, "item:", itemId);
+    return true;
+  } catch (error) {
+    console.error("Error updating menu item in Firestore:", error);
+    return false;
+  }
+}
+
+export async function updateRestaurant(
+  restaurantId: string,
+  updatedData: Partial<Omit<Restaurant, 'id' | 'menuCategories'>>
+): Promise<boolean> {
+  if (!restaurantId) {
+    console.error("Missing restaurant ID for updating restaurant");
+    return false;
+  }
+
+  try {
+    const restaurantRef = doc(db, "restaurants", restaurantId);
+    const restaurantSnap = await getDoc(restaurantRef);
+
+    if (!restaurantSnap.exists()) {
+      console.error("Restaurant not found for updating:", restaurantId);
+      return false;
+    }
+
+    const restaurantData = restaurantSnap.data() as Omit<Restaurant, 'id'>;
+    
+    // Create a deep copy to safely modify
+    const updatedRestaurantData = {
+      ...restaurantData,
+      ...updatedData
+    };
+
+    await updateDoc(restaurantRef, updatedRestaurantData);
+    
+    console.log("Restaurant updated in Firestore:", restaurantId);
+    return true;
+  } catch (error) {
+    console.error("Error updating restaurant in Firestore:", error);
     return false;
   }
 }

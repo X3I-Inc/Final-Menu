@@ -1,24 +1,32 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { Restaurant, MenuItem } from '@/lib/data';
 import { deleteMenuItem } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2, Loader2 } from 'lucide-react';
+import { Trash2, Loader2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import EditMenuItemForm from './edit-menu-item-form';
 
 interface MenuItemsManagerProps {
   restaurant: Restaurant;
   onMenuItemDeleted?: () => Promise<void>;
+  onMenuItemUpdated?: () => Promise<void>;
   categoryId?: string;
 }
 
-export default function MenuItemsManager({ restaurant, onMenuItemDeleted, categoryId }: MenuItemsManagerProps) {
+export default function MenuItemsManager({ 
+  restaurant, 
+  onMenuItemDeleted,
+  onMenuItemUpdated,
+  categoryId 
+}: MenuItemsManagerProps) {
   const { toast } = useToast();
-  const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<{ categoryId: string; item: MenuItem } | null>(null);
 
   const handleDeleteItem = async (categoryId: string, item: MenuItem) => {
     setIsDeleting(item.id);
@@ -52,9 +60,43 @@ export default function MenuItemsManager({ restaurant, onMenuItemDeleted, catego
     }
   };
 
+  const handleEditItem = (categoryId: string, item: MenuItem) => {
+    setEditingItem({ categoryId, item });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItem(null);
+  };
+
+  const handleItemUpdated = async () => {
+    setEditingItem(null);
+    if (onMenuItemUpdated) {
+      await onMenuItemUpdated();
+    }
+  };
+
   const categoriesToShow = categoryId 
     ? restaurant.menuCategories.filter(cat => cat.id === categoryId)
     : restaurant.menuCategories;
+
+  if (editingItem) {
+    return (
+      <Card className="shadow-lg rounded-xl">
+        <CardHeader>
+          <CardTitle>Edit Menu Item</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EditMenuItemForm
+            restaurant={restaurant}
+            categoryId={editingItem.categoryId}
+            item={editingItem.item}
+            onMenuItemUpdated={handleItemUpdated}
+            onCancel={handleCancelEdit}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -83,42 +125,51 @@ export default function MenuItemsManager({ restaurant, onMenuItemDeleted, catego
                       </p>
                     </div>
                   </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Menu Item</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete "{item.name}"? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDeleteItem(category.id, item)}
-                          disabled={isDeleting === item.id}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  
+                  <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditItem(category.id, item)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="destructive"
+                          size="sm"
                         >
-                          {isDeleting === item.id ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Deleting...
-                            </>
-                          ) : (
-                            'Delete'
-                          )}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Menu Item</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete "{item.name}"? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteItem(category.id, item)}
+                            disabled={isDeleting === item.id}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {isDeleting === item.id ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Deleting...
+                              </>
+                            ) : (
+                              'Delete'
+                            )}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               ))}
             </div>
