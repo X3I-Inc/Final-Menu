@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -7,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import {
   getAllRestaurants,
   getRestaurantById,
+  deleteRestaurant,
+  deleteMenuCategory,
   type Restaurant,
   type MenuCategory,
 } from '@/lib/data';
@@ -14,20 +15,32 @@ import RestaurantSelector from '@/components/dashboard/restaurant-selector';
 import MenuItemForm from '@/components/dashboard/menu-item-form';
 import AddRestaurantForm from '@/components/dashboard/add-restaurant-form';
 import AddCategoryForm from '@/components/dashboard/add-category-form';
+import MenuItemsManager from '@/components/dashboard/menu-items-manager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ChefHat, Loader2, ShieldAlert, Building, Layers } from 'lucide-react';
+import { ChefHat, Loader2, ShieldAlert, Building, Layers, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+
+type UserRole = 'owner' | 'superowner';
 
 export default function DashboardPage() {
   const { user, userRole, assignedRestaurantId, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
 
   const [restaurantsToManage, setRestaurantsToManage] = useState<Restaurant[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
-  const loadPageData = useCallback(async (authUser, authRole, authAssignedId, currentSelectedRestaurantId) => {
+  const loadPageData = useCallback(async (
+    authUser: any,
+    authRole: UserRole,
+    authAssignedId: string | null,
+    currentSelectedRestaurantId: string | null
+  ) => {
     if (!authUser || !authRole) {
       setIsLoadingData(false);
       return;
@@ -65,7 +78,7 @@ export default function DashboardPage() {
       }
     }
     setIsLoadingData(false);
-  }, []); 
+  }, []);
 
   useEffect(() => {
     document.title = "Dashboard | MenuLink";
@@ -76,7 +89,7 @@ export default function DashboardPage() {
     }
 
     if (!authLoading && user && userRole) {
-      loadPageData(user, userRole, assignedRestaurantId, selectedRestaurant?.id);
+      loadPageData(user, userRole as UserRole, assignedRestaurantId, selectedRestaurant?.id || null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, userRole, authLoading, assignedRestaurantId, router]); // Removed loadPageData from deps for now to avoid potential loops, will be called explicitly.
@@ -98,7 +111,7 @@ export default function DashboardPage() {
 
   const handleRestaurantAdded = async () => {
      if (userRole === 'superowner' && user) {
-        await loadPageData(user, userRole, assignedRestaurantId, null); 
+        await loadPageData(user, userRole as UserRole, assignedRestaurantId, null); 
     }
   };
 
@@ -129,6 +142,26 @@ export default function DashboardPage() {
     }
   };
 
+  const handleRestaurantDeleted = async () => {
+    if (userRole === 'superowner' && user) {
+      await loadPageData(user, userRole as UserRole, assignedRestaurantId, null);
+    }
+  };
+
+  const handleCategoryDeleted = async () => {
+    if (selectedRestaurant) {
+      setIsLoadingData(true);
+      const updatedRestaurant = await getRestaurantById(selectedRestaurant.id);
+      setSelectedRestaurant(updatedRestaurant || null);
+
+      // If superowner, also update the list of all restaurants as one has changed
+      if (userRole === 'superowner') {
+        const allRestaurants = await getAllRestaurants();
+        setRestaurantsToManage(allRestaurants);
+      }
+      setIsLoadingData(false);
+    }
+  };
 
   if (authLoading || isLoadingData) {
     return (
@@ -201,11 +234,56 @@ export default function DashboardPage() {
             <CardDescription>Choose which restaurant you want to modify.</CardDescription>
           </CardHeader>
           <CardContent>
-            <RestaurantSelector
-              restaurants={restaurantsToManage}
-              selectedRestaurantId={selectedRestaurant?.id || ""} 
-              onSelectRestaurant={handleRestaurantSelect}
-            />
+            <div className="space-y-4">
+              <RestaurantSelector
+                restaurants={restaurantsToManage}
+                selectedRestaurantId={selectedRestaurant?.id || ""} 
+                onSelectRestaurant={handleRestaurantSelect}
+              />
+              {selectedRestaurant && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full md:w-auto">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Restaurant
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Restaurant</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete "{selectedRestaurant.name}"? This action cannot be undone and will delete all associated menu items and categories.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={async () => {
+                          const success = await deleteRestaurant(selectedRestaurant.id);
+                          if (success) {
+                            toast({
+                              title: "Restaurant Deleted",
+                              description: `${selectedRestaurant.name} has been successfully deleted.`,
+                              className: "bg-green-100 border-green-300 text-green-700 dark:bg-green-900 dark:border-green-700 dark:text-green-200"
+                            });
+                            await handleRestaurantDeleted();
+                          } else {
+                            toast({
+                              variant: "destructive",
+                              title: "Error Deleting Restaurant",
+                              description: "Could not delete the restaurant. Please try again.",
+                            });
+                          }
+                        }}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -246,13 +324,79 @@ export default function DashboardPage() {
 
           <Card className="shadow-lg rounded-xl">
             <CardHeader>
+              <CardTitle>Manage Menu Items</CardTitle>
+              <CardDescription>View, edit, and delete menu items for {selectedRestaurant.name}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {selectedRestaurant.menuCategories.map((category) => (
+                  <Card key={category.id} className="shadow-lg rounded-xl">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <CardTitle className="text-xl">{category.name}</CardTitle>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Category
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete the "{category.name}" category? This will also delete all menu items in this category. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={async () => {
+                                const success = await deleteMenuCategory(selectedRestaurant.id, category.id);
+                                if (success) {
+                                  toast({
+                                    title: "Category Deleted",
+                                    description: `${category.name} has been successfully deleted.`,
+                                    className: "bg-green-100 border-green-300 text-green-700 dark:bg-green-900 dark:border-green-700 dark:text-green-200"
+                                  });
+                                  await handleCategoryDeleted();
+                                } else {
+                                  toast({
+                                    variant: "destructive",
+                                    title: "Error Deleting Category",
+                                    description: "Could not delete the category. Please try again.",
+                                  });
+                                }
+                              }}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </CardHeader>
+                    <CardContent>
+                      <MenuItemsManager
+                        restaurant={selectedRestaurant}
+                        onMenuItemDeleted={handleMenuItemAdded}
+                        categoryId={category.id}
+                      />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg rounded-xl">
+            <CardHeader>
               <CardTitle>Add New Menu Item to: {selectedRestaurant.name}</CardTitle>
               <CardDescription>Fill in the details for the new menu item.</CardDescription>
             </CardHeader>
             <CardContent>
               <MenuItemForm
-                  restaurant={selectedRestaurant}
-                  onMenuItemAdd={handleMenuItemAdded}
+                restaurant={selectedRestaurant}
+                onMenuItemAdd={handleMenuItemAdded}
               />
             </CardContent>
           </Card>

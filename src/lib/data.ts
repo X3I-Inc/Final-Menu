@@ -1,4 +1,3 @@
-
 import { db } from './firebase';
 import { 
   collection, 
@@ -12,6 +11,7 @@ import {
   limit,
   updateDoc,
   arrayUnion,
+  deleteDoc,
   // writeBatch, // Not currently used, but good to have for batch operations
 } from "firebase/firestore";
 
@@ -295,5 +295,111 @@ export async function addMenuCategory(restaurantId: string, categoryName: string
   } catch (error) {
     console.error("Error adding menu category to Firestore:", error);
     return null;
+  }
+}
+
+export async function deleteMenuItem(
+  restaurantId: string,
+  categoryId: string,
+  itemId: string
+): Promise<boolean> {
+  if (!restaurantId || !categoryId || !itemId) {
+    console.error("Missing required parameters for deleting menu item:", { restaurantId, categoryId, itemId });
+    return false;
+  }
+
+  try {
+    const restaurantRef = doc(db, "restaurants", restaurantId);
+    const restaurantSnap = await getDoc(restaurantRef);
+
+    if (!restaurantSnap.exists()) {
+      console.error("Restaurant not found for deleting menu item:", restaurantId);
+      return false;
+    }
+
+    const restaurantData = restaurantSnap.data() as Omit<Restaurant, 'id'>;
+    const currentCategories = restaurantData.menuCategories || [];
+    const categoryIndex = currentCategories.findIndex(c => c.id === categoryId);
+
+    if (categoryIndex === -1) {
+      console.error("Category ID not found in restaurant for deleting menu item:", categoryId, restaurantId);
+      return false;
+    }
+
+    // Create a deep copy to safely modify
+    const updatedMenuCategories = JSON.parse(JSON.stringify(currentCategories)) as MenuCategory[];
+    
+    if (!updatedMenuCategories[categoryIndex].items) {
+      console.error("No items array found in category:", categoryId);
+      return false;
+    }
+
+    // Filter out the item to delete
+    updatedMenuCategories[categoryIndex].items = updatedMenuCategories[categoryIndex].items.filter(
+      item => item.id !== itemId
+    );
+
+    await updateDoc(restaurantRef, {
+      menuCategories: updatedMenuCategories
+    });
+    
+    console.log("Menu item deleted from Firestore for restaurant:", restaurantId, "category:", categoryId, "item:", itemId);
+    return true;
+  } catch (error) {
+    console.error("Error deleting menu item from Firestore:", error);
+    return false;
+  }
+}
+
+export async function deleteRestaurant(restaurantId: string): Promise<boolean> {
+  if (!restaurantId) {
+    console.error("Missing restaurant ID for deletion");
+    return false;
+  }
+
+  try {
+    const restaurantRef = doc(db, "restaurants", restaurantId);
+    await deleteDoc(restaurantRef);
+    console.log("Restaurant deleted from Firestore:", restaurantId);
+    return true;
+  } catch (error) {
+    console.error("Error deleting restaurant from Firestore:", error);
+    return false;
+  }
+}
+
+export async function deleteMenuCategory(
+  restaurantId: string,
+  categoryId: string
+): Promise<boolean> {
+  if (!restaurantId || !categoryId) {
+    console.error("Missing required parameters for deleting menu category:", { restaurantId, categoryId });
+    return false;
+  }
+
+  try {
+    const restaurantRef = doc(db, "restaurants", restaurantId);
+    const restaurantSnap = await getDoc(restaurantRef);
+
+    if (!restaurantSnap.exists()) {
+      console.error("Restaurant not found for deleting menu category:", restaurantId);
+      return false;
+    }
+
+    const restaurantData = restaurantSnap.data() as Omit<Restaurant, 'id'>;
+    const currentCategories = restaurantData.menuCategories || [];
+    
+    // Filter out the category to delete
+    const updatedMenuCategories = currentCategories.filter(category => category.id !== categoryId);
+
+    await updateDoc(restaurantRef, {
+      menuCategories: updatedMenuCategories
+    });
+    
+    console.log("Menu category deleted from Firestore for restaurant:", restaurantId, "category:", categoryId);
+    return true;
+  } catch (error) {
+    console.error("Error deleting menu category from Firestore:", error);
+    return false;
   }
 }

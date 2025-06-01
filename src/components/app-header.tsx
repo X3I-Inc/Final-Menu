@@ -30,22 +30,20 @@ export default function AppHeader() {
   return (
     <header className="bg-secondary border-b border-border sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold text-primary hover:text-accent transition-colors duration-200">
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold text-primary hover:opacity-90 transition-opacity duration-200">
           <Utensils className="h-7 w-7" />
           <span>MenuLink</span>
         </Link>
         
         <div className="flex items-center gap-4">
+          {user && <ThemeToggle />}
           {canAccessDashboard && (
-            <>
-              <ThemeToggle />
-              <Button asChild variant="outline" size="sm">
-                <Link href="/dashboard" className="flex items-center gap-1 sm:gap-2">
-                  <LayoutDashboard className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span className="hidden sm:inline">Dashboard</span>
-                </Link>
-              </Button>
-            </>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard" className="flex items-center gap-1 sm:gap-2">
+                <LayoutDashboard className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden sm:inline">Dashboard</span>
+              </Link>
+            </Button>
           )}
           {loading ? (
              <div className="flex items-center gap-2">
