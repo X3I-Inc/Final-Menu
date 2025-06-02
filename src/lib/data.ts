@@ -137,16 +137,47 @@ export async function addRestaurant(data: NewRestaurantData): Promise<Restaurant
 
 export async function getAllRestaurants(): Promise<Restaurant[]> {
   try {
+    console.log("Fetching all restaurants from Firestore...");
+    console.log("Firebase config:", {
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    });
+    
     const restaurantsCol = collection(db, "restaurants");
+    console.log("Collection reference created");
+    
     const q = query(restaurantsCol, orderBy("name")); 
+    console.log("Query created with orderBy name");
+    
     const restaurantSnapshot = await getDocs(q);
-    const restaurantList = restaurantSnapshot.docs.map(docSnap => ({
-      id: docSnap.id,
-      ...(docSnap.data() as Omit<Restaurant, 'id'>)
-    }));
+    console.log("Snapshot received, empty:", restaurantSnapshot.empty);
+    
+    const restaurantList = restaurantSnapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      console.log(`Processing restaurant ${docSnap.id}:`, {
+        name: data.name,
+        categoriesCount: data.menuCategories?.length || 0
+      });
+      return {
+        id: docSnap.id,
+        ...(data as Omit<Restaurant, 'id'>)
+      };
+    });
+    
+    console.log("Fetched restaurants:", restaurantList.length, "restaurants found");
+    restaurantList.forEach(restaurant => {
+      console.log(`Restaurant: ${restaurant.name} (ID: ${restaurant.id}), Categories: ${restaurant.menuCategories.length}`);
+    });
     return restaurantList;
   } catch (error) {
     console.error("Error fetching all restaurants:", error);
+    if (error instanceof Error) {
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+    }
     return [];
   }
 }
@@ -157,16 +188,19 @@ export async function getRestaurantById(id: string): Promise<Restaurant | null> 
     return null;
   }
   try {
+    console.log(`Fetching restaurant with ID: ${id} from Firestore...`);
     const restaurantRef = doc(db, "restaurants", id);
     const docSnap = await getDoc(restaurantRef);
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...(docSnap.data() as Omit<Restaurant, 'id'>) };
+      const restaurant = { id: docSnap.id, ...(docSnap.data() as Omit<Restaurant, 'id'>) };
+      console.log(`Found restaurant: ${restaurant.name}, Categories: ${restaurant.menuCategories.length}`);
+      return restaurant;
     } else {
       console.warn("No such restaurant document with ID:", id);
       return null;
     }
   } catch (error) {
-    console.warn("Error fetching restaurant by ID:", id, error); // Changed to console.warn
+    console.warn("Error fetching restaurant by ID:", id, error);
     return null;
   }
 }

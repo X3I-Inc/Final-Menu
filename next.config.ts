@@ -30,10 +30,10 @@ const nextConfig: NextConfig = {
       }
     ],
   },
-  // Performance optimizations
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
+  // Temporarily disable console removal for debugging
+  // compiler: {
+  //   removeConsole: process.env.NODE_ENV === 'production',
+  // },
   experimental: {
     optimizeCss: true,
     optimizePackageImports: [
