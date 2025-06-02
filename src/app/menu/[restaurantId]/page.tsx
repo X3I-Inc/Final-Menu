@@ -1,9 +1,12 @@
-
 import { getRestaurantById } from '@/lib/data';
 import MenuDisplay from '@/components/menu-display';
 import type { Metadata } from 'next';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PackageOpen } from 'lucide-react';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 type Props = {
   params: { restaurantId: string };
