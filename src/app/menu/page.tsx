@@ -4,12 +4,17 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Utensils } from 'lucide-react';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: 'Browse Menus | MenuLink',
   description: 'Browse and explore restaurant menus on MenuLink.',
 };
 
 export default async function MenuPage() {
+  // Fetch fresh data on every request
   const restaurants = await getAllRestaurants();
 
   return (
