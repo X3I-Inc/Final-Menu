@@ -1,4 +1,4 @@
-
+# B2B SAAS solution for hospitality sector
 ## Features
 
 - ⚡️ Next.js 13+ with App Router
@@ -43,7 +43,7 @@
 
 ## Deployment
 
-You can deploy this project to Vercel, Firebase Hosting, or any platform that supports Next.js.
+The project is deployed on vercel
 
 ## Contributing
 
