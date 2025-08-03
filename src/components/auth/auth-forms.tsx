@@ -89,7 +89,7 @@ export function AuthForm({ isSignUp = false, onSuccess, onForgotPassword }: Auth
     },
   });
 
-  async function onSubmit(values: any) {
+  async function onSubmit(values: SignInFormValues | SignUpFormValues) {
     setIsLoading(true);
     clearError(); // Clear previous errors
     try {

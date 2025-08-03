@@ -51,7 +51,7 @@ function DashboardContent() {
   };
 
   const loadPageData = useCallback(async (
-    authUser: any,
+    authUser: unknown,
     authRole: UserRole,
     authAssignedId: string | null,
     authOwnedIds: string[]

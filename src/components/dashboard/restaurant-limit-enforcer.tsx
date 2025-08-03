@@ -39,7 +39,7 @@ export function RestaurantLimitEnforcer({ onRestaurantsUpdated }: RestaurantLimi
     if (isOverLimit) {
       loadRestaurants();
     }
-  }, [isOverLimit]);
+  }, [isOverLimit, loadRestaurants]);
 
   const loadRestaurants = async () => {
     setIsLoading(true);
@@ -169,7 +169,7 @@ export function RestaurantLimitEnforcer({ onRestaurantsUpdated }: RestaurantLimi
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete Restaurant</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to delete "{restaurant.name}"? This action cannot be undone and will permanently remove all menu items and data associated with this restaurant.
+                          Are you sure you want to delete &quot;{restaurant.name}&quot;? This action cannot be undone and will permanently remove all menu items and data associated with this restaurant.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

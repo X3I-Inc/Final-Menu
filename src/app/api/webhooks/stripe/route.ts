@@ -137,7 +137,13 @@ export async function POST(request: NextRequest) {
               const { tier, billingInterval } = subscription.metadata || {};
               
               // Always update the subscription status
-              const updateData: any = {
+              const updateData: {
+                subscriptionStatus: string;
+                updatedAt: string;
+                subscriptionTier?: string;
+                billingInterval?: string;
+                restaurantLimit?: number;
+              } = {
                 subscriptionStatus: subscription.status,
                 updatedAt: new Date().toISOString(),
               };

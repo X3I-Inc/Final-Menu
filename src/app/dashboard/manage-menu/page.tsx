@@ -129,7 +129,7 @@ function ManageMenuContent() {
     if (!authLoading && user && userRole) {
       loadPageData(user, userRole as UserRole, assignedRestaurantId, ownedRestaurantIds, selectedRestaurant?.id || null);
     }
-  }, [user, userRole, authLoading, assignedRestaurantId, ownedRestaurantIds, loadPageData]);
+  }, [user, userRole, authLoading, assignedRestaurantId, ownedRestaurantIds, loadPageData, selectedRestaurant?.id]);
 
   // Optimistic update handlers
   const handleMenuItemAddedOptimistic = async (newItem: MenuItem, categoryId: string) => {

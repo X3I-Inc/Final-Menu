@@ -76,7 +76,7 @@ export function ForgotPasswordForm({ onBackToSignIn }: ForgotPasswordFormProps) 
       <div className="flex flex-col items-center justify-center gap-4 p-6">
         <h2 className="text-xl font-bold text-primary">Check Your Email</h2>
         <p className="text-center text-muted-foreground">
-          We've sent a password reset link to your email address. Please check your inbox and follow the instructions to reset your password.
+          We&apos;ve sent a password reset link to your email address. Please check your inbox and follow the instructions to reset your password.
         </p>
         <Button 
           variant="outline" 
@@ -95,7 +95,7 @@ export function ForgotPasswordForm({ onBackToSignIn }: ForgotPasswordFormProps) 
       <div className="text-center">
         <h2 className="text-xl font-bold text-primary">Forgot Password?</h2>
         <p className="text-sm text-muted-foreground mt-2">
-          Enter your email address and we'll send you a link to reset your password.
+          Enter your email address and we&apos;ll send you a link to reset your password.
         </p>
       </div>
       
