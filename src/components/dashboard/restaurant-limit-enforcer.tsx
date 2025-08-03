@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,12 +29,12 @@ export function RestaurantLimitEnforcer({ onRestaurantsUpdated }: RestaurantLimi
   const currentCount = ownedRestaurantIds.length;
   const isOverLimit = currentCount > allowedLimit;
 
-  const loadRestaurants = React.useCallback(async () => {
+  const loadRestaurants = useCallback(async () => {
     setIsLoading(true);
     try {
       const allRestaurants = await getAllRestaurants();
       // Filter to only show restaurants owned by this user
-      const userRestaurants = allRestaurants.filter(restaurant => 
+      const userRestaurants = allRestaurants.filter(restaurant =>
         ownedRestaurantIds.includes(restaurant.id)
       );
       setRestaurants(userRestaurants);
@@ -51,16 +51,11 @@ export function RestaurantLimitEnforcer({ onRestaurantsUpdated }: RestaurantLimi
   }, [ownedRestaurantIds, toast]);
 
   // Load restaurants if we're over the limit
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOverLimit) {
       loadRestaurants();
     }
   }, [isOverLimit, loadRestaurants]);
-
-  // Only show for owners with active subscriptions
-  if (userRole !== 'owner' || !subscriptionTier || !restaurantLimit) {
-    return null;
-  }
 
   const handleDeleteRestaurant = async (restaurantId: string, restaurantName: string) => {
     setIsDeleting(restaurantId);
@@ -71,10 +66,10 @@ export function RestaurantLimitEnforcer({ onRestaurantsUpdated }: RestaurantLimi
           title: "Restaurant Deleted",
           description: `${restaurantName} has been deleted successfully.`,
         });
-        
+
         // Refresh the restaurants list
         await loadRestaurants();
-        
+
         // Notify parent component
         if (onRestaurantsUpdated) {
           onRestaurantsUpdated();
@@ -93,6 +88,11 @@ export function RestaurantLimitEnforcer({ onRestaurantsUpdated }: RestaurantLimi
       setIsDeleting(null);
     }
   };
+  
+  // Only show for owners with active subscriptions
+  if (userRole !== 'owner' || !subscriptionTier || !restaurantLimit) {
+    return null;
+  }
 
   if (!isOverLimit) {
     return null;
@@ -108,7 +108,7 @@ export function RestaurantLimitEnforcer({ onRestaurantsUpdated }: RestaurantLimi
           Restaurant Limit Exceeded
         </CardTitle>
         <CardDescription>
-          Your current plan allows {allowedLimit} restaurant{allowedLimit !== 1 ? 's' : ''}, but you own {currentCount}. 
+          Your current plan allows {allowedLimit} restaurant{allowedLimit !== 1 ? 's' : ''}, but you own {currentCount}.
           You need to delete {excessCount} restaurant{excessCount !== 1 ? 's' : ''} to continue.
         </CardDescription>
       </CardHeader>
@@ -117,7 +117,7 @@ export function RestaurantLimitEnforcer({ onRestaurantsUpdated }: RestaurantLimi
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Action Required</AlertTitle>
           <AlertDescription>
-            You must delete {excessCount} restaurant{excessCount !== 1 ? 's' : ''} to comply with your {subscriptionTier} plan limits. 
+            You must delete {excessCount} restaurant{excessCount !== 1 ? 's' : ''} to comply with your {subscriptionTier} plan limits.
             You can upgrade your plan or delete restaurants below.
           </AlertDescription>
         </Alert>
@@ -147,7 +147,7 @@ export function RestaurantLimitEnforcer({ onRestaurantsUpdated }: RestaurantLimi
                       {restaurant.menuCategories.length} categories, {restaurant.menuCategories.reduce((acc, cat) => acc + cat.items.length, 0)} items
                     </p>
                   </div>
-                  
+
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
@@ -200,4 +200,4 @@ export function RestaurantLimitEnforcer({ onRestaurantsUpdated }: RestaurantLimi
       </CardContent>
     </Card>
   );
-} 
+}
