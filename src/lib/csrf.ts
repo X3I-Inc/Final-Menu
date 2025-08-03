@@ -72,13 +72,6 @@ export class CSRFProtection {
   }
 
   /**
-   * Refresh a CSRF token
-   */
-  static refreshToken(): string {
-    return this.generateToken();
-  }
-
-  /**
    * Extract token from request headers
    */
   static extractTokenFromHeaders(headers: Headers): string | null {
@@ -90,21 +83,37 @@ export class CSRFProtection {
   }
 
   /**
-   * Extract token from request body
+   * Extract token from cookies
    */
-  static extractTokenFromBody(body: Record<string, unknown>): string | null {
-    if (!body) return null;
+  static extractTokenFromCookies(cookies: string): string | null {
+    if (!cookies) return null;
     
-    const csrfToken = body.csrfToken || body._csrf || body.csrf_token;
-    return typeof csrfToken === 'string' ? csrfToken : null;
+    const cookiePairs = cookies.split(';');
+    for (const pair of cookiePairs) {
+      const [name, value] = pair.trim().split('=');
+      if (name === 'csrf_token' && value) {
+        return decodeURIComponent(value);
+      }
+    }
+    return null;
   }
 
   /**
-   * Validate CSRF token from request
+   * Validate CSRF token using Double-Submit Cookie Pattern
    */
-  static validateRequest(request: Request): boolean {
-    const token = this.extractTokenFromHeaders(request.headers);
-    return token ? this.validateToken(token) : false;
+  static validateDoubleSubmitToken(headerToken: string | null, cookieToken: string | null): boolean {
+    // Both tokens must be present
+    if (!headerToken || !cookieToken) {
+      return false;
+    }
+
+    // Both tokens must be identical
+    if (headerToken !== cookieToken) {
+      return false;
+    }
+
+    // Both tokens must be valid
+    return this.validateToken(headerToken) && this.validateToken(cookieToken);
   }
 
   /**
@@ -141,7 +150,7 @@ export class CSRFProtection {
   }
 }
 
-// Middleware helper for Next.js API routes
+// Middleware helper for Next.js API routes using Double-Submit Cookie Pattern
 export function withCSRFProtection(handler: (request: NextRequest) => Promise<Response>) {
   return async (request: NextRequest) => {
     // Skip CSRF validation for GET requests
@@ -149,38 +158,17 @@ export function withCSRFProtection(handler: (request: NextRequest) => Promise<Re
       return handler(request);
     }
 
-    // For POST requests, we need to clone the request to read the body
-    let token = CSRFProtection.extractTokenFromHeaders(request.headers);
+    // Extract token from request header
+    const headerToken = CSRFProtection.extractTokenFromHeaders(request.headers);
     
-    // If no token in headers, try to get it from body
-    if (!token && request.method === 'POST') {
-      try {
-        const clonedRequest = request.clone();
-        const body = await clonedRequest.json();
-        token = CSRFProtection.extractTokenFromBody(body);
-      } catch (error) {
-        // If we can't parse the body, just continue with header token
-      }
-    }
+    // Extract token from HttpOnly cookie
+    const cookieToken = CSRFProtection.extractTokenFromCookies(request.headers.get('cookie') || '');
 
-    // Validate CSRF token for state-changing requests
-    if (!token) {
+    // Validate using Double-Submit Cookie Pattern
+    if (!CSRFProtection.validateDoubleSubmitToken(headerToken, cookieToken)) {
       return new Response(
         JSON.stringify({ 
-          error: 'Missing CSRF token',
-          code: 'CSRF_TOKEN_MISSING'
-        }),
-        { 
-          status: 403,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
-    if (!CSRFProtection.validateToken(token)) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Invalid CSRF token',
+          error: 'Invalid or missing CSRF token',
           code: 'CSRF_TOKEN_INVALID'
         }),
         { 
@@ -197,53 +185,33 @@ export function withCSRFProtection(handler: (request: NextRequest) => Promise<Re
 // Client-side helper for React components
 export const clientCSRF = {
   /**
-   * Get CSRF token from meta tag or generate new one
+   * Get CSRF token from server
    */
-  getToken(): string | null {
-    if (typeof window === 'undefined') {
+  async getToken(): Promise<string | null> {
+    try {
+      const response = await fetch('/api/csrf-token', {
+        method: 'GET',
+        credentials: 'include', // Important: include cookies
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch CSRF token');
+        return null;
+      }
+
+      const data = await response.json();
+      return data.token || null;
+    } catch (error) {
+      console.error('Error fetching CSRF token:', error);
       return null;
     }
-
-    // Try to get from meta tag
-    const metaTag = document.querySelector('meta[name="csrf-token"]');
-    if (metaTag) {
-      return metaTag.getAttribute('content');
-    }
-
-    // Try to get from localStorage
-    const storedToken = localStorage.getItem('csrf-token');
-    if (storedToken && CSRFProtection.validateToken(storedToken)) {
-      return storedToken;
-    }
-
-    return null;
-  },
-
-  /**
-   * Set CSRF token in localStorage
-   */
-  setToken(token: string): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    localStorage.setItem('csrf-token', token);
-  },
-
-  /**
-   * Clear CSRF token
-   */
-  clearToken(): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    localStorage.removeItem('csrf-token');
   },
 
   /**
    * Add CSRF token to fetch request
    */
   async fetchWithCSRF(url: string, options: RequestInit = {}): Promise<Response> {
-    const token = this.getToken();
+    const token = await this.getToken();
     
     const headers = {
       ...options.headers,
@@ -253,6 +221,7 @@ export const clientCSRF = {
     return fetch(url, {
       ...options,
       headers,
+      credentials: 'include', // Important: include cookies
     });
   }
-}; 
+};

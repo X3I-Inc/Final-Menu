@@ -3,7 +3,6 @@ import { stripe } from '@/lib/stripe';
 import { subscriptionTiers } from '@/lib/subscription-config';
 import { validateSubscriptionRequest, RateLimiter } from '@/lib/validation';
 import { withCSRFProtection } from '@/lib/csrf';
-import { getAuthenticatedUser } from '@/lib/firebase-admin';
 import { ErrorHandler } from '@/lib/error-handler';
 
 // Initialize rate limiter
@@ -12,7 +11,7 @@ const rateLimiter = new RateLimiter(60000, 10); // 10 requests per minute
 export const POST = withCSRFProtection(async (request: NextRequest) => {
   // Handle preflight requests
   if (request.method === 'OPTIONS') {
-    return new NextResponse(null, { 
+    return new NextResponse(null, {
       status: 200,
       headers: {
         'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
@@ -24,13 +23,13 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
 
   try {
     // Rate limiting
-    const clientIp = request.headers.get('x-forwarded-for') || 
-                    request.headers.get('x-real-ip') || 
+    const clientIp = request.headers.get('x-forwarded-for') ||
+                    request.headers.get('x-real-ip') ||
                     'unknown';
     if (!rateLimiter.isAllowed(clientIp)) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
-        { 
+        {
           status: 429,
           headers: {
             'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
@@ -46,7 +45,7 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
     if (!contentType || !contentType.includes('application/json')) {
       return NextResponse.json(
         { error: 'Content-Type must be application/json' },
-        { 
+        {
           status: 400,
           headers: {
             'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
@@ -64,7 +63,7 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
       console.error('JSON parsing error:', parseError);
       return NextResponse.json(
         { error: 'Invalid JSON in request body' },
-        { 
+        {
           status: 400,
           headers: {
             'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
@@ -80,7 +79,7 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
     if (!validationResult.success) {
       return NextResponse.json(
         { error: 'Invalid request data', details: validationResult.error.errors },
-        { 
+        {
           status: 400,
           headers: {
             'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
@@ -98,41 +97,11 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
     console.log('⚠️ TEMPORARY: Skipping Firebase authentication for development');
     console.log('User ID:', userId, 'Email:', userEmail);
     
-    // Verify that the userId matches the authenticated user's UID
-    // const authenticatedUser = await getAuthenticatedUser(request);
-    // if (!authenticatedUser) {
-    //   return NextResponse.json(
-    //     { error: 'Authentication required' },
-    //     { 
-    //       status: 401,
-    //       headers: {
-    //         'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
-    //         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    //         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    //       }
-    //     }
-    //   );
-    // }
-
-    // if (authenticatedUser.uid !== userId) {
-    //   return NextResponse.json(
-    //     { error: 'Unauthorized: User ID mismatch' },
-    //     { 
-    //       status: 403,
-    //       headers: {
-    //         'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
-    //         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    //         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    //       }
-    //     }
-    //   );
-    // }
-
     // Validate tier and billing interval
     if (!subscriptionTiers[tier as keyof typeof subscriptionTiers]) {
       return NextResponse.json(
         { error: 'Invalid subscription tier' },
-        { 
+        {
           status: 400,
           headers: {
             'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
@@ -146,7 +115,7 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
     if (billingInterval !== 'monthly' && billingInterval !== 'yearly') {
       return NextResponse.json(
         { error: 'Invalid billing interval' },
-        { 
+        {
           status: 400,
           headers: {
             'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
@@ -176,7 +145,7 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
     if (!priceId) {
       return NextResponse.json(
         { error: 'Price ID not found for the selected tier and billing interval' },
-        { 
+        {
           status: 400,
           headers: {
             'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
@@ -207,7 +176,7 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
       customer_email: userEmail,
     });
 
-    return NextResponse.json({ sessionId: session.id }, { 
+    return NextResponse.json({ sessionId: session.id }, {
       headers: {
         'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -218,4 +187,4 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
     console.error('Checkout session creation error:', error);
     return ErrorHandler.handleAPIError(error, 'create-checkout-session');
   }
-}); 
+});

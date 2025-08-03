@@ -20,7 +20,7 @@ interface SubscriptionManagerProps {
 export function SubscriptionManager({ onSubscriptionUpdated }: SubscriptionManagerProps) {
   const { user, subscriptionTier, subscriptionStatus, userRole, stripeSubscriptionId, ownedRestaurantIds } = useAuth();
   const { toast } = useToast();
-  const { token: csrfToken } = useCSRF();
+  const { getToken } = useCSRF();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string>('');
   const [selectedBilling, setSelectedBilling] = useState<'monthly' | 'yearly'>('monthly');
@@ -37,7 +37,7 @@ export function SubscriptionManager({ onSubscriptionUpdated }: SubscriptionManag
   const isCanceled = subscriptionStatus === 'canceled';
 
   const handleUpgrade = async () => {
-    if (!user || !selectedTier || !stripeSubscriptionId || !csrfToken) return;
+    if (!user || !selectedTier || !stripeSubscriptionId) return;
 
     // Check if this is a downgrade and user has too many restaurants
     if (isDowngrade(selectedTier) && !canDowngradeToTier(selectedTier)) {
@@ -51,6 +51,11 @@ export function SubscriptionManager({ onSubscriptionUpdated }: SubscriptionManag
 
     setIsLoading(true);
     try {
+      const csrfToken = await getToken();
+      if (!csrfToken) {
+        throw new Error('Failed to get CSRF token');
+      }
+
       const response = await fetch('/api/update-subscription', {
         method: 'POST',
         headers: {
@@ -97,10 +102,15 @@ export function SubscriptionManager({ onSubscriptionUpdated }: SubscriptionManag
   };
 
   const handleCancel = async () => {
-    if (!user || !stripeSubscriptionId || !csrfToken) return;
+    if (!user || !stripeSubscriptionId) return;
 
     setIsLoading(true);
     try {
+      const csrfToken = await getToken();
+      if (!csrfToken) {
+        throw new Error('Failed to get CSRF token');
+      }
+
       const response = await fetch('/api/cancel-subscription', {
         method: 'POST',
         headers: {
@@ -145,10 +155,15 @@ export function SubscriptionManager({ onSubscriptionUpdated }: SubscriptionManag
   };
 
   const handleReactivate = async () => {
-    if (!user || !stripeSubscriptionId || !csrfToken) return;
+    if (!user || !stripeSubscriptionId) return;
 
     setIsLoading(true);
     try {
+      const csrfToken = await getToken();
+      if (!csrfToken) {
+        throw new Error('Failed to get CSRF token');
+      }
+
       const response = await fetch('/api/reactivate-subscription', {
         method: 'POST',
         headers: {
@@ -193,10 +208,15 @@ export function SubscriptionManager({ onSubscriptionUpdated }: SubscriptionManag
   };
 
   const handleCreateNewSubscription = async () => {
-    if (!user || !csrfToken) return;
+    if (!user) return;
 
     setIsLoading(true);
     try {
+      const csrfToken = await getToken();
+      if (!csrfToken) {
+        throw new Error('Failed to get CSRF token');
+      }
+
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {

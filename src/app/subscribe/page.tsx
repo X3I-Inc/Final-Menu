@@ -42,9 +42,9 @@ function SubscribeContent() {
   const [billing, setBilling] = useState("monthly");
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const { user, userRole } = useAuth();
-  const { token: csrfToken } = useCSRF();
-  const router = useRouter();
   const { toast } = useToast();
+  const router = useRouter();
+  const { getToken } = useCSRF();
 
   // Redirect if user is already an owner
   React.useEffect(() => {
@@ -54,7 +54,7 @@ function SubscribeContent() {
   }, [userRole, router]);
 
   const handleSubscribe = async (tierId: string) => {
-    if (!user || !csrfToken) {
+    if (!user) {
       toast({
         title: "Authentication Required",
         description: "Please log in to purchase a subscription.",
@@ -67,6 +67,11 @@ function SubscribeContent() {
     setIsLoading(tierId);
 
     try {
+      const csrfToken = await getToken();
+      if (!csrfToken) {
+        throw new Error('Failed to get CSRF token');
+      }
+
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
