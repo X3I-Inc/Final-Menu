@@ -85,6 +85,17 @@ export default function MenuItemForm({ restaurant, onMenuItemAdd }: MenuItemForm
     let imageUrlToSave: string | undefined = undefined;
     let finalDataAiHint = values.dataAiHint;
 
+    // Add overall timeout to prevent infinite loading
+    const overallTimeout = setTimeout(() => {
+      console.error("Form submission timeout - taking too long");
+      setIsSubmitting(false);
+      toast({
+        variant: "destructive",
+        title: "Operation Timeout",
+        description: "The operation is taking too long. Please try again.",
+      });
+    }, 60000); // 60 second timeout
+
     try {
       if (imageFile) {
         toast({ title: "Uploading item image...", description: "Please wait.", duration: 10000 }); // Increased duration
@@ -96,11 +107,11 @@ export default function MenuItemForm({ restaurant, onMenuItemAdd }: MenuItemForm
           toast({
             variant: "destructive",
             title: "Image Upload Failed",
-            description: uploadError instanceof Error ? uploadError.message : "Could not upload image. Please try again.",
+            description: uploadError instanceof Error ? uploadError.message : "Could not upload image. Proceeding without image.",
             duration: 5000,
           });
-          setIsSubmitting(false); // Stop if image upload fails
-          return; 
+          // Continue without image instead of stopping
+          imageUrlToSave = undefined;
         }
         finalDataAiHint = values.dataAiHint || imageFile.name.split('.')[0].substring(0,30);
       } else if (values.dataAiHint && values.dataAiHint.trim() !== "") {
@@ -154,6 +165,7 @@ export default function MenuItemForm({ restaurant, onMenuItemAdd }: MenuItemForm
         description: error instanceof Error ? error.message : "An unexpected error occurred while saving the item.",
       });
     } finally {
+      clearTimeout(overallTimeout);
       setIsSubmitting(false);
     }
   };

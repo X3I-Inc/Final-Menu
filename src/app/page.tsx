@@ -1,14 +1,16 @@
-import type { Metadata } from 'next';
+"use client";
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Utensils, ArrowRight } from 'lucide-react';
-
-export const metadata: Metadata = {
-  title: 'Welcome to MenuLink | Your Digital Menu Solution',
-  description: 'Easily view and share restaurant menus online with MenuLink.',
-};
+import { useAuth } from '@/hooks/use-auth';
 
 export default function HomePage() {
+  const { user, userRole, loading } = useAuth();
+
+  // Don't show "For Restaurants" button if user is already an owner or superowner
+  const showForRestaurantsButton = !loading && (!user || (userRole !== 'owner' && userRole !== 'superowner'));
+
   return (
     <div className="container mx-auto px-4 py-12 md:py-24">
       <div className="max-w-3xl mx-auto text-center space-y-8">
@@ -30,6 +32,15 @@ export default function HomePage() {
             </Link>
           </Button>
         </div>
+        
+        {showForRestaurantsButton && (
+          <Button asChild size="lg" variant="outline" className="gap-2">
+            <Link href="/subscribe">
+              For Restaurants
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        )}
       </div>
     </div>
   );

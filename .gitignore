@@ -43,3 +43,85 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+
+# Environment files and secrets
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*.local
+.env.*.development
+.env.*.test
+.env.*.production
+
+# Security and certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.p8
+service-account*.json
+firebase-service-account*.json
+stripe-*.json
+*.keystore
+*.jks
+
+# Logs and debugging
+*.log
+logs/
+debug/
+*.debug
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Build artifacts
+dist/
+build/
+out/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Configuration files with potential secrets
+config.json
+secrets.json
+credentials.json
+auth.json
+firebase-config.json
+stripe-config.json
+
+# Monitoring and analytics (may contain sensitive data)
+sentry.properties
+logrocket.json
+analytics.json

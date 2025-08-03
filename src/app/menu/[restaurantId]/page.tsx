@@ -38,7 +38,7 @@ export default async function RestaurantMenuPage({ params }: Props) {
           <PackageOpen className="h-5 w-5" />
           <AlertTitle>Restaurant Not Found</AlertTitle>
           <AlertDescription>
-            The menu for restaurant ID "{params.restaurantId}" could not be found. It might be an invalid ID or the restaurant does not exist.
+            The menu for restaurant ID &quot;{params.restaurantId}&quot; could not be found. It might be an invalid ID or the restaurant does not exist.
           </AlertDescription>
         </Alert>
       </div>

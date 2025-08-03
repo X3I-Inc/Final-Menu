@@ -1,6 +1,6 @@
 "use client";
 import Link from 'next/link';
-import { Utensils, LogIn, LogOut, UserCircle, LayoutDashboard } from 'lucide-react';
+import { Utensils, LogIn, LogOut, UserCircle, LayoutDashboard, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -36,7 +36,7 @@ export default function AppHeader() {
         </Link>
         
         <div className="flex items-center gap-4">
-          {user && <ThemeToggle />}
+          <ThemeToggle />
           {canAccessDashboard && (
             <Button asChild variant="outline" size="sm">
               <Link href="/dashboard" className="flex items-center gap-1 sm:gap-2">
@@ -45,6 +45,11 @@ export default function AppHeader() {
               </Link>
             </Button>
           )}
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/request-quote" className="flex items-center gap-1 sm:gap-2">
+              <span className="hidden sm:inline">Request Quote</span>
+            </Link>
+          </Button>
           {loading ? (
              <div className="flex items-center gap-2">
                 {canAccessDashboard && <Skeleton className="h-8 w-24 rounded-md" /> }
@@ -66,6 +71,12 @@ export default function AppHeader() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="flex items-center cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out

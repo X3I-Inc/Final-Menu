@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 import { Building, Loader2, Image as ImageIconLucide, Phone, MapPin, Globe } from 'lucide-react';
 import Image from 'next/image';
 
@@ -35,6 +36,7 @@ export default function AddRestaurantForm({ onRestaurantAdded }: AddRestaurantFo
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const form = useForm<AddRestaurantFormValues>({
     resolver: zodResolver(addRestaurantFormSchema),
@@ -106,7 +108,7 @@ export default function AddRestaurantForm({ onRestaurantAdded }: AddRestaurantFo
           logoAiHint: finalLogoAiHint,
       };
 
-      const newRestaurant = await addRestaurant(newRestaurantData);
+      const newRestaurant = await addRestaurant(newRestaurantData, user?.uid);
 
       if (newRestaurant) {
         toast({

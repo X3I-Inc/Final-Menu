@@ -3,10 +3,12 @@ import type {NextConfig} from 'next';
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
-    ignoreBuildErrors: true,
+    // Enable TypeScript checking in production
+    ignoreBuildErrors: process.env.NODE_ENV === 'development',
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    // Enable ESLint checking in production
+    ignoreDuringBuilds: process.env.NODE_ENV === 'development',
   },
   images: {
     remotePatterns: [
@@ -30,10 +32,10 @@ const nextConfig: NextConfig = {
       }
     ],
   },
-  // Temporarily disable console removal for debugging
-  // compiler: {
-  //   removeConsole: process.env.NODE_ENV === 'production',
-  // },
+  // Remove console logs in production for security
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
   experimental: {
     optimizeCss: true,
     optimizePackageImports: [
@@ -58,6 +60,52 @@ const nextConfig: NextConfig = {
       '@radix-ui/react-toast',
       '@radix-ui/react-tooltip',
     ],
+  },
+  // Security headers (backup to middleware)
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()'
+          },
+          {
+            key: 'X-Permitted-Cross-Domain-Policies',
+            value: 'none'
+          },
+          {
+            key: 'X-Download-Options',
+            value: 'noopen'
+          },
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'off'
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload'
+          }
+        ],
+      },
+    ];
   },
 };
 

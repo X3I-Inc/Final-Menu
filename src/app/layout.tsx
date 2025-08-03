@@ -7,6 +7,8 @@ import AppFooter from '@/components/app-footer';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/context/auth-provider';
 import { ThemeProvider } from "@/components/theme-provider";
+import { ErrorBoundary } from '@/components/error-boundary';
+import { CSRFProvider } from '@/components/csrf-provider';
 
 const geistSans = GeistSans;
 const geistMono = GeistMono;
@@ -14,6 +16,26 @@ const geistMono = GeistMono;
 export const metadata: Metadata = {
   title: 'MenuLink | Your Digital Menu Solution',
   description: 'Easily view and share restaurant menus online with MenuLink.',
+  icons: {
+    icon: [
+      {
+        url: '/favicon.ico',
+        sizes: 'any',
+      },
+      {
+        url: '/icon.png',
+        sizes: '32x32',
+        type: 'image/png',
+      },
+    ],
+    apple: [
+      {
+        url: '/apple-touch-icon.png',
+        sizes: '180x180',
+        type: 'image/png',
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -30,14 +52,18 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <AppHeader />
-            <main className="flex-1 w-full">
-              {children}
-            </main>
-            <AppFooter />
-            <Toaster />
-          </AuthProvider>
+          <ErrorBoundary>
+            <CSRFProvider>
+              <AuthProvider>
+                <AppHeader />
+                <main className="flex-1 w-full">
+                  {children}
+                </main>
+                <AppFooter />
+                <Toaster />
+              </AuthProvider>
+            </CSRFProvider>
+          </ErrorBoundary>
         </ThemeProvider>
       </body>
     </html>

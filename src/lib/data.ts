@@ -93,7 +93,7 @@ export async function addRestaurant(data: NewRestaurantData): Promise<Restaurant
       contactObject.website = data.contactWebsite.trim();
     }
 
-    let logoUrlToSave = data.logoUrl && data.logoUrl.trim() !== "" ? data.logoUrl.trim() : `https://placehold.co/100x100.png?text=${encodeURIComponent(data.name.substring(0,2))}`;
+    const logoUrlToSave = data.logoUrl && data.logoUrl.trim() !== "" ? data.logoUrl.trim() : `https://placehold.co/100x100.png?text=${encodeURIComponent(data.name.substring(0,2))}`;
     
     let logoAiHintToSave: string;
     if (data.logoAiHint && data.logoAiHint.trim() !== "") {
@@ -215,9 +215,9 @@ export async function getDefaultRestaurant(): Promise<Restaurant | null> {
     } else {
       console.warn("Restaurant with ID '1' not found. Attempting fallback.");
     }
-  } catch (error: any) {
-     // Log as warning if restaurant '1' fetch fails (e.g., permissions, network)
-    console.warn(`Attempt to fetch restaurant '1' failed (Error: ${String(error.message || error)}). Attempting fallback.`);
+    } catch (error: unknown) {
+    // Log as warning if restaurant '1' fetch fails (e.g., permissions, network)
+    console.warn(`Attempt to fetch restaurant '1' failed (Error: ${String(error)}). Attempting fallback.`);
   }
 
   // Fallback: get the first restaurant ordered by name (or by ID if preferred)
@@ -229,8 +229,10 @@ export async function getDefaultRestaurant(): Promise<Restaurant | null> {
     const snapshot = await getDocs(q);
     if (!snapshot.empty) {
       const docSnap = snapshot.docs[0];
-      console.log("Default restaurant fallback: using restaurant with ID:", docSnap.id);
-      return { id: docSnap.id, ...(docSnap.data() as Omit<Restaurant, 'id'>) };
+      if (docSnap) {
+        console.log("Default restaurant fallback: using restaurant with ID:", docSnap.id);
+        return { id: docSnap.id, ...(docSnap.data() as Omit<Restaurant, 'id'>) };
+      }
     }
     console.warn("No default restaurant found via fallback criteria either.");
     return null;
@@ -245,12 +247,15 @@ export async function addMenuItem(
   categoryId: string, 
   newItemData: Omit<MenuItem, 'id'>
 ): Promise<boolean> {
+  console.log("addMenuItem called with:", { restaurantId, categoryId, newItemData });
+  
   if (!restaurantId || !categoryId) {
     console.error("Restaurant ID or Category ID missing for adding menu item.");
     return false;
   }
 
   try {
+    console.log("Getting restaurant document...");
     const restaurantRef = doc(db, "restaurants", restaurantId);
     const restaurantSnap = await getDoc(restaurantRef);
 
@@ -259,6 +264,7 @@ export async function addMenuItem(
       return false;
     }
 
+    console.log("Restaurant found, processing data...");
     const restaurantData = restaurantSnap.data() as Omit<Restaurant, 'id'>; 
     const newMenuItemId = `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     
@@ -267,7 +273,6 @@ export async function addMenuItem(
       : newItemData.name.toLowerCase().split(' ').slice(0,2).join(' ');
     if (!dataAiHintValue) dataAiHintValue = "food item";
 
-
     const menuItemToAdd: MenuItem = { 
       ...newItemData, 
       id: newMenuItemId,
@@ -275,8 +280,13 @@ export async function addMenuItem(
       dataAiHint: dataAiHintValue,
     };
 
+    console.log("Created menu item:", menuItemToAdd);
+
     const currentCategories = restaurantData.menuCategories || [];
+    console.log("Current categories:", currentCategories.length);
+    
     const categoryIndex = currentCategories.findIndex(c => c.id === categoryId);
+    console.log("Category index found:", categoryIndex);
 
     if (categoryIndex === -1) {
       console.error("Category ID not found in restaurant for adding menu item:", categoryId, restaurantId);
@@ -286,11 +296,19 @@ export async function addMenuItem(
     // Create a deep copy to safely modify
     const updatedMenuCategories = JSON.parse(JSON.stringify(currentCategories)) as MenuCategory[];
     
-    if (!updatedMenuCategories[categoryIndex].items) {
-      updatedMenuCategories[categoryIndex].items = [];
+    // TypeScript guard to ensure the category exists
+    const category = updatedMenuCategories[categoryIndex];
+    if (!category) {
+      console.error("Category not found at index:", categoryIndex);
+      return false;
     }
-    updatedMenuCategories[categoryIndex].items.push(menuItemToAdd);
+    
+    if (!category.items) {
+      category.items = [];
+    }
+    category.items.push(menuItemToAdd);
 
+    console.log("Updating Firestore document...");
     await updateDoc(restaurantRef, {
       menuCategories: updatedMenuCategories
     });
@@ -299,6 +317,13 @@ export async function addMenuItem(
     return true;
   } catch (error) {
     console.error("Error adding menu item to Firestore:", error);
+    if (error instanceof Error) {
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+    }
     return false;
   }
 }
@@ -365,13 +390,20 @@ export async function deleteMenuItem(
     // Create a deep copy to safely modify
     const updatedMenuCategories = JSON.parse(JSON.stringify(currentCategories)) as MenuCategory[];
     
-    if (!updatedMenuCategories[categoryIndex].items) {
+    // TypeScript guard to ensure the category exists
+    const category = updatedMenuCategories[categoryIndex];
+    if (!category) {
+      console.error("Category not found at index:", categoryIndex);
+      return false;
+    }
+    
+    if (!category.items) {
       console.error("No items array found in category:", categoryId);
       return false;
     }
 
     // Filter out the item to delete
-    updatedMenuCategories[categoryIndex].items = updatedMenuCategories[categoryIndex].items.filter(
+    category.items = category.items.filter(
       item => item.id !== itemId
     );
 
@@ -507,22 +539,29 @@ export async function updateMenuItem(
     // Create a deep copy to safely modify
     const updatedMenuCategories = JSON.parse(JSON.stringify(currentCategories)) as MenuCategory[];
     
-    if (!updatedMenuCategories[categoryIndex].items) {
+    // TypeScript guard to ensure the category exists
+    const category = updatedMenuCategories[categoryIndex];
+    if (!category) {
+      console.error("Category not found at index:", categoryIndex);
+      return false;
+    }
+    
+    if (!category.items) {
       console.error("No items array found in category:", categoryId);
       return false;
     }
 
-    const itemIndex = updatedMenuCategories[categoryIndex].items.findIndex(item => item.id === itemId);
+    const itemIndex = category.items.findIndex(item => item.id === itemId);
     if (itemIndex === -1) {
       console.error("Item not found in category:", itemId, categoryId);
       return false;
     }
 
     // Update the item with new data
-    updatedMenuCategories[categoryIndex].items[itemIndex] = {
-      ...updatedMenuCategories[categoryIndex].items[itemIndex],
+    category.items[itemIndex] = {
+      ...category.items[itemIndex],
       ...updatedItemData
-    };
+    } as MenuItem;
 
     await updateDoc(restaurantRef, {
       menuCategories: updatedMenuCategories

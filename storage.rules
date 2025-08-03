@@ -1,0 +1,21 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Menu item images - allow authenticated users to upload/delete
+    match /menu_item_images/{restaurantId}/{allPaths=**} {
+      allow read: if true; // Public read access for menu images
+      allow write: if request.auth != null; // Allow any authenticated user to upload
+    }
+    
+    // Restaurant logos - allow authenticated users to upload/delete
+    match /restaurant_logos/{restaurantId}/{allPaths=**} {
+      allow read: if true; // Public read access for restaurant logos
+      allow write: if request.auth != null; // Allow any authenticated user to upload
+    }
+    
+    // Default rule - deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+} 
