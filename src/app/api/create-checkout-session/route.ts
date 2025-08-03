@@ -4,6 +4,7 @@ import { subscriptionTiers } from '@/lib/subscription-config';
 import { validateSubscriptionRequest, RateLimiter } from '@/lib/validation';
 import { withCSRFProtection } from '@/lib/csrf';
 import { ErrorHandler } from '@/lib/error-handler';
+import { getAuthenticatedUser } from '@/lib/firebase-admin';
 
 // Initialize rate limiter
 const rateLimiter = new RateLimiter(60000, 10); // 10 requests per minute
@@ -92,10 +93,14 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
 
     const { tier, billingInterval, userId, userEmail } = validationResult.data;
 
-    // TEMPORARY: Skip Firebase authentication for development/testing
-    // TODO: Re-enable this when Firebase Admin is properly configured
-    console.log('⚠️ TEMPORARY: Skipping Firebase authentication for development');
-    console.log('User ID:', userId, 'Email:', userEmail);
+    // Verify that the userId matches the authenticated user's UID
+    const authenticatedUser = await getAuthenticatedUser(request);
+    if (!authenticatedUser) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    if (authenticatedUser.uid !== userId) {
+        return NextResponse.json({ error: 'Unauthorized: User ID mismatch' }, { status: 403 });
+    }
     
     // Validate tier and billing interval
     if (!subscriptionTiers[tier as keyof typeof subscriptionTiers]) {
@@ -166,6 +171,9 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
         },
       ],
       mode: 'subscription',
+      subscription_data: {
+        trial_period_days: billingInterval === 'monthly' ? 30 : 60,
+      },
       success_url: `${request.nextUrl.origin}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${request.nextUrl.origin}/subscribe?canceled=true`,
       metadata: {

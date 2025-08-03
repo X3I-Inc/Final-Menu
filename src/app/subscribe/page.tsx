@@ -1,3 +1,5 @@
+// src/app/subscribe/page.tsx
+
 "use client";
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -72,11 +74,15 @@ function SubscribeContent() {
         throw new Error('Failed to get CSRF token');
       }
 
+      // Get the Firebase Auth ID token for the user
+      const idToken = await user.getIdToken();
+
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken,
+          'Authorization': `Bearer ${idToken}`, // Add the token here
         },
         body: JSON.stringify({
           tier: tierId,
@@ -251,4 +257,4 @@ export default function SubscribePage() {
       <SubscribeContent />
     </ProtectedRoute>
   );
-} 
+}

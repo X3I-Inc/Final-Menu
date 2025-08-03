@@ -93,39 +93,34 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
     const quoteData = validationResult.data;
 
     // Verify that the userId matches the authenticated user's UID
-    // TEMPORARY: Skip Firebase authentication for development/testing
-    // TODO: Re-enable this when Firebase Admin is properly configured
-    console.log('⚠️ TEMPORARY: Skipping Firebase authentication for development');
-    console.log('User ID:', quoteData.userId, 'Email:', quoteData.userEmail);
-    
-    // const authenticatedUser = await getAuthenticatedUser(request);
-    // if (!authenticatedUser) {
-    //   return NextResponse.json(
-    //     { error: 'Authentication required' },
-    //     { 
-    //       status: 401,
-    //       headers: {
-    //         'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
-    //         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    //         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    //       }
-    //     }
-    //   );
-    // }
+    const authenticatedUser = await getAuthenticatedUser(request);
+    if (!authenticatedUser) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { 
+          status: 401,
+          headers: {
+            'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          }
+        }
+      );
+    }
 
-    // if (authenticatedUser.uid !== quoteData.userId) {
-    //   return NextResponse.json(
-    //     { error: 'Unauthorized: User ID mismatch' },
-    //     { 
-    //       status: 403,
-    //       headers: {
-    //         'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
-    //         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    //         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    //       }
-    //     }
-    //   );
-    // }
+    if (authenticatedUser.uid !== quoteData.userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized: User ID mismatch' },
+        { 
+          status: 403,
+          headers: {
+            'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          }
+        }
+      );
+    }
 
     // Store quote request in database (Firestore)
     try {
@@ -185,4 +180,4 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
     console.error('Quote request error:', error);
     return ErrorHandler.handleAPIError(error, 'request-quote');
   }
-}); 
+});
