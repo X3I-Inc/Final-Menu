@@ -24,24 +24,12 @@ export function RestaurantLimitEnforcer({ onRestaurantsUpdated }: RestaurantLimi
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  // Only show for owners with active subscriptions
-  if (userRole !== 'owner' || !subscriptionTier || !restaurantLimit) {
-    return null;
-  }
-
   const currentTierConfig = subscriptionTiers[subscriptionTier as keyof typeof subscriptionTiers];
   const allowedLimit = currentTierConfig?.restaurantLimit || 1;
   const currentCount = ownedRestaurantIds.length;
   const isOverLimit = currentCount > allowedLimit;
 
-  // Load restaurants if we're over the limit
-  React.useEffect(() => {
-    if (isOverLimit) {
-      loadRestaurants();
-    }
-  }, [isOverLimit, loadRestaurants]);
-
-  const loadRestaurants = async () => {
+  const loadRestaurants = React.useCallback(async () => {
     setIsLoading(true);
     try {
       const allRestaurants = await getAllRestaurants();
@@ -60,7 +48,19 @@ export function RestaurantLimitEnforcer({ onRestaurantsUpdated }: RestaurantLimi
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [ownedRestaurantIds, toast]);
+
+  // Load restaurants if we're over the limit
+  React.useEffect(() => {
+    if (isOverLimit) {
+      loadRestaurants();
+    }
+  }, [isOverLimit, loadRestaurants]);
+
+  // Only show for owners with active subscriptions
+  if (userRole !== 'owner' || !subscriptionTier || !restaurantLimit) {
+    return null;
+  }
 
   const handleDeleteRestaurant = async (restaurantId: string, restaurantName: string) => {
     setIsDeleting(restaurantId);

@@ -9,11 +9,12 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 type Props = {
-  params: { restaurantId: string };
+  params: Promise<{ restaurantId: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const restaurant = await getRestaurantById(params.restaurantId);
+  const { restaurantId } = await params;
+  const restaurant = await getRestaurantById(restaurantId);
   if (!restaurant) {
     return {
       title: 'Menu Not Found | MenuLink',
@@ -27,7 +28,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function RestaurantMenuPage({ params }: Props) {
-  const restaurant = await getRestaurantById(params.restaurantId);
+  const { restaurantId } = await params;
+  const restaurant = await getRestaurantById(restaurantId);
   
   if (!restaurant) {
     // This can happen if ID is invalid or restaurant not found in DB
@@ -38,7 +40,7 @@ export default async function RestaurantMenuPage({ params }: Props) {
           <PackageOpen className="h-5 w-5" />
           <AlertTitle>Restaurant Not Found</AlertTitle>
           <AlertDescription>
-            The menu for restaurant ID &quot;{params.restaurantId}&quot; could not be found. It might be an invalid ID or the restaurant does not exist.
+            The menu for restaurant ID &quot;{restaurantId}&quot; could not be found. It might be an invalid ID or the restaurant does not exist.
           </AlertDescription>
         </Alert>
       </div>
