@@ -1,26 +1,29 @@
 // Environment variable validation
 export function validateEnvironmentVariables() {
   const requiredEnvVars = {
-    // Server-side only (secure)
+    // Server-side only (secure) - NEVER expose these to the browser
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     CSRF_SECRET_KEY: process.env.CSRF_SECRET_KEY,
     
-    // Firebase Admin credentials (server-side only)
+    // Firebase Admin credentials (server-side only) - NEVER expose these
     FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
     FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
     FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY,
     
-    // Client-side (public but validated)
+    // Client-side (public but validated) - These are SAFE to expose
+    // Firebase public API key - designed to be public
     NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    // Firebase public config - designed to be public
     NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
     NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
     NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    // Stripe publishable key - designed to be public
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     
-    // Stripe Price IDs (public)
+    // Stripe Price IDs (public) - These are just identifiers, safe to expose
     NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PRICE_ID: process.env.NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PRICE_ID,
     NEXT_PUBLIC_STRIPE_STARTER_YEARLY_PRICE_ID: process.env.NEXT_PUBLIC_STRIPE_STARTER_YEARLY_PRICE_ID,
     NEXT_PUBLIC_STRIPE_GROWTH_MONTHLY_PRICE_ID: process.env.NEXT_PUBLIC_STRIPE_GROWTH_MONTHLY_PRICE_ID,
