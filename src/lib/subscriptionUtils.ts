@@ -59,7 +59,6 @@ export function getSubscriptionStatusDisplayName(status: string): string {
     'unpaid': 'Unpaid',
     'incomplete': 'Incomplete',
     'incomplete_expired': 'Incomplete Expired',
-    'trialing': 'Trial',
     'paused': 'Paused',
   };
   
@@ -70,7 +69,7 @@ export function getSubscriptionStatusDisplayName(status: string): string {
  * Check if subscription is active
  */
 export function isSubscriptionActive(status: string): boolean {
-  return ['active', 'trialing'].includes(status);
+  return ['active'].includes(status);
 }
 
 /**

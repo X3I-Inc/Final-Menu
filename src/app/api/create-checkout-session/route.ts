@@ -171,9 +171,6 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
         },
       ],
       mode: 'subscription',
-      subscription_data: {
-        trial_period_days: billingInterval === 'monthly' ? 30 : 60,
-      },
       success_url: `${request.nextUrl.origin}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${request.nextUrl.origin}/subscribe?canceled=true`,
       metadata: {

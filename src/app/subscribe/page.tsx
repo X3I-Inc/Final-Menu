@@ -171,7 +171,7 @@ function SubscribeContent() {
           }`}
           onClick={() => setBilling("monthly")}
         >
-          Monthly <span className="text-xs text-green-500 ml-1">(1 month free)</span>
+          Monthly
         </button>
         <span className="text-muted-foreground font-semibold">or</span>
         <button
@@ -182,7 +182,7 @@ function SubscribeContent() {
           }`}
           onClick={() => setBilling("yearly")}
         >
-          Yearly <span className="text-xs text-green-500">(2 months free)</span>
+          Yearly
         </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8 w-full max-w-6xl">

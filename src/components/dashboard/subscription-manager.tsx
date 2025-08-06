@@ -1,3 +1,5 @@
+// src/components/dashboard/subscription-manager.tsx
+
 "use client";
 
 import React, { useState } from 'react';
@@ -56,11 +58,14 @@ export function SubscriptionManager({ onSubscriptionUpdated }: SubscriptionManag
         throw new Error('Failed to get CSRF token');
       }
 
+      const idToken = await user.getIdToken(); // Get the Firebase ID token
+
       const response = await fetch('/api/update-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken,
+          'Authorization': `Bearer ${idToken}`, // Add the Authorization header
         },
         body: JSON.stringify({
           subscriptionId: stripeSubscriptionId,
@@ -81,7 +86,7 @@ export function SubscriptionManager({ onSubscriptionUpdated }: SubscriptionManag
       if (result.success) {
         toast({
           title: "Subscription Updated",
-          description: `Your subscription has been successfully updated to ${selectedTier}.`,
+          description: `Your subscription has been successfully updated to ${getTierDisplayName(selectedTier)}.`,
         });
         
         // Refresh the page to update the auth context
@@ -110,12 +115,15 @@ export function SubscriptionManager({ onSubscriptionUpdated }: SubscriptionManag
       if (!csrfToken) {
         throw new Error('Failed to get CSRF token');
       }
+      
+      const idToken = await user.getIdToken(); // Get the Firebase ID token
 
       const response = await fetch('/api/cancel-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken,
+          'Authorization': `Bearer ${idToken}`, // Add the Authorization header
         },
         body: JSON.stringify({
           subscriptionId: stripeSubscriptionId,
@@ -163,12 +171,15 @@ export function SubscriptionManager({ onSubscriptionUpdated }: SubscriptionManag
       if (!csrfToken) {
         throw new Error('Failed to get CSRF token');
       }
+      
+      const idToken = await user.getIdToken(); // Get the Firebase ID token
 
       const response = await fetch('/api/reactivate-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken,
+          'Authorization': `Bearer ${idToken}`, // Add the Authorization header
         },
         body: JSON.stringify({
           subscriptionId: stripeSubscriptionId,
@@ -217,11 +228,14 @@ export function SubscriptionManager({ onSubscriptionUpdated }: SubscriptionManag
         throw new Error('Failed to get CSRF token');
       }
 
+      const idToken = await user.getIdToken();
+
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken,
+          'Authorization': `Bearer ${idToken}`,
         },
         body: JSON.stringify({
           tier: selectedTier || 'starter',
@@ -554,4 +568,4 @@ export function SubscriptionManager({ onSubscriptionUpdated }: SubscriptionManag
       </CardContent>
     </Card>
   );
-} 
+}

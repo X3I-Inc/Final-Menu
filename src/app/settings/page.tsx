@@ -1,3 +1,5 @@
+// src/app/settings/page.tsx
+
 "use client";
 
 import React, { useState } from 'react';
@@ -32,10 +34,6 @@ function SettingsContent() {
     displayName: user?.displayName || '',
     email: user?.email || '',
   });
-
-  // Check if user needs attention (email not verified or subscription issues)
-  const needsAttention = !user?.emailVerified || 
-    (userRole === 'owner' && (!subscriptionTier || subscriptionStatus !== 'active'));
 
   const handleProfileUpdate = async () => {
     try {
@@ -96,18 +94,6 @@ function SettingsContent() {
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
-          {needsAttention && (
-            <Alert>
-              <Shield className="h-4 w-4" />
-              <AlertTitle>Account Attention Required</AlertTitle>
-              <AlertDescription>
-                {!user?.emailVerified && "Please verify your email address for account security. "}
-                {userRole === 'owner' && (!subscriptionTier || subscriptionStatus !== 'active') && 
-                  "Your subscription needs attention. Please check the Subscription tab."}
-              </AlertDescription>
-            </Alert>
-          )}
-          
           <Card className="shadow-lg rounded-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -305,4 +291,4 @@ function SettingsContent() {
       </Tabs>
     </div>
   );
-} 
+}

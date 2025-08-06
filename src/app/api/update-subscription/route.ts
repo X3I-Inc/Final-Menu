@@ -1,5 +1,8 @@
+// src/app/api/update-subscription/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe, subscriptionTiers } from '@/lib/stripe';
+import { stripe } from '@/lib/stripe';
+import { subscriptionTiers } from '@/lib/subscription-config';
 import { z } from 'zod';
 import { withCSRFProtection } from '@/lib/csrf';
 import { getAuthenticatedUser } from '@/lib/firebase-admin';
@@ -110,12 +113,22 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
         }
       );
     }
+    
+    // **FIX STARTS HERE**
+    // Retrieve the current subscription to get the subscription item ID
+    const currentSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+    const subscriptionItemId = currentSubscription.items.data[0]?.id;
+
+    if (!subscriptionItemId) {
+      throw new Error('No subscription item found for the given subscription.');
+    }
+    // **FIX ENDS HERE**
 
     // Update the subscription with the new price
-    const subscription = await stripe.subscriptions.update(subscriptionId, {
+    const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
       items: [
         {
-          id: (await stripe.subscriptions.retrieve(subscriptionId)).items.data[0].id,
+          id: subscriptionItemId, // Use the safely retrieved item ID
           price: newPriceId,
         },
       ],
@@ -127,7 +140,7 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
       },
     });
 
-    console.log(`Subscription updated: ${subscription.id}, New tier: ${newTier}, Billing: ${billingInterval}`);
+    console.log(`Subscription updated: ${updatedSubscription.id}, New tier: ${newTier}, Billing: ${billingInterval}`);
 
     // Also update the user's Firestore document immediately
     try {
@@ -140,7 +153,7 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
         subscriptionTier: newTier,
         billingInterval: billingInterval,
         restaurantLimit: tierConfig.restaurantLimit,
-        subscriptionStatus: subscription.status,
+        subscriptionStatus: updatedSubscription.status,
         updatedAt: new Date().toISOString(),
       });
       
@@ -151,11 +164,11 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
 
     return NextResponse.json({ 
       success: true,
-      subscriptionId: subscription.id,
+      subscriptionId: updatedSubscription.id,
       tier: newTier,
       billingInterval,
       restaurantLimit: tierConfig.restaurantLimit,
-      status: subscription.status,
+      status: updatedSubscription.status,
     }, { 
       headers: {
         'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*',
@@ -167,4 +180,4 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
   } catch (error) {
     return ErrorHandler.handleAPIError(error, 'update-subscription');
   }
-}); 
+});
