@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { DashboardMenu } from '@/components/dashboard/dashboard-menu';
 import { RestaurantLimitEnforcer } from '@/components/dashboard/restaurant-limit-enforcer';
+import { SubscriptionNotification } from '@/components/dashboard/subscription-notification';
 
 type UserRole = 'owner' | 'superowner';
 
@@ -154,6 +155,9 @@ function DashboardContent() {
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12 space-y-8">
+      {/* Subscription Notification - Shows warnings for payment issues */}
+      <SubscriptionNotification />
+      
       <header>
         <h1 className="text-3xl font-bold tracking-tight text-primary">Dashboard</h1>
         <p className="text-muted-foreground">Welcome to your restaurant management dashboard.</p>

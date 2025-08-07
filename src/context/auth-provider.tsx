@@ -31,6 +31,8 @@ export interface AuthContextType {
   subscriptionStatus: string | null;
   restaurantLimit: number | null;
   stripeSubscriptionId: string | null;
+  gracePeriodEnd: string | null;
+  paymentFailureDate: string | null;
   loading: boolean;
   error: AuthError | null;
   isEmailVerified: boolean;
@@ -56,6 +58,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [restaurantLimit, setRestaurantLimit] = useState<number | null>(null);
   const [stripeSubscriptionId, setStripeSubscriptionId] = useState<string | null>(null);
+  const [gracePeriodEnd, setGracePeriodEnd] = useState<string | null>(null);
+  const [paymentFailureDate, setPaymentFailureDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<AuthError | null>(null);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
@@ -111,6 +115,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setSubscriptionStatus(roleData.subscriptionStatus || null);
             setRestaurantLimit(roleData.restaurantLimit || null);
             setStripeSubscriptionId(roleData.stripeSubscriptionId || null);
+            setGracePeriodEnd(roleData.gracePeriodEnd || null);
+            setPaymentFailureDate(roleData.paymentFailureDate || null);
           } else {
             console.log("User role document not found for UID:", currentUser.uid);
           }
@@ -135,6 +141,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setSubscriptionStatus(null);
       setRestaurantLimit(null);
       setStripeSubscriptionId(null);
+      setGracePeriodEnd(null);
+      setPaymentFailureDate(null);
       setIsEmailVerified(false);
       setLoading(false);
     });
@@ -226,6 +234,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setSubscriptionStatus(null);
       setRestaurantLimit(null);
       setStripeSubscriptionId(null);
+      setGracePeriodEnd(null);
+      setPaymentFailureDate(null);
       setIsEmailVerified(false);
       
       await signOut(auth);
@@ -258,6 +268,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       subscriptionStatus,
       restaurantLimit,
       stripeSubscriptionId,
+      gracePeriodEnd,
+      paymentFailureDate,
       loading, 
       error, 
       isEmailVerified,

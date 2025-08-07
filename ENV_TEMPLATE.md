@@ -23,6 +23,7 @@ STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
 
 # Security Configuration
 CSRF_SECRET_KEY=your_csrf_secret_key_here_minimum_32_characters
+CLEANUP_API_TOKEN=your_cleanup_api_token_here_for_scheduled_jobs
 
 # Optional: Error Monitoring Services
 NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn_here

@@ -3,6 +3,7 @@ import { stripe } from '@/lib/stripe';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { subscriptionTiers } from '@/lib/subscription-config';
+import { trackPaymentFailure, reactivateSubscription } from '@/lib/subscription-enforcement';
 import type { Stripe } from 'stripe';
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -163,6 +164,19 @@ export async function POST(request: NextRequest) {
               }
               
               await updateDoc(userDoc.ref, updateData);
+              
+              // Handle payment failures and reactivations
+              if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
+                console.log(`Payment failure detected for user ${userId}, tracking grace period`);
+                await trackPaymentFailure(userId, subscription.id);
+              } else if (subscription.status === 'active') {
+                // Check if this is a recovery from a failed payment state
+                const previousStatus = (event.data as any).previous_attributes?.status;
+                if (previousStatus === 'past_due' || previousStatus === 'unpaid') {
+                  console.log(`Payment recovered for user ${userId}, reactivating subscription`);
+                  await reactivateSubscription(userId, subscription.id);
+                }
+              }
             }
           } else {
             console.log(`No user found with subscription ID: ${subscription.id}`);
